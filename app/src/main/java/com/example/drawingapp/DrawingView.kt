@@ -39,6 +39,15 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs){
     private var color = Color.BLACK
     private var canvas: Canvas? = null
 
+    /**
+     * A variable for canvas which will be initialized later and used.
+     *
+     *The Canvas class holds the "draw" calls. To draw something, you need 4 basic components: A Bitmap to hold the pixels, a Canvas to host
+     * the draw calls (writing into the bitmap), a drawing primitive (e.g. Rect,
+     * Path, text, Bitmap), and a paint (to describe the colors and styles for the
+     * drawing)
+     */
+
     private val mPaths = ArrayList<CustomPath>()
     // ArrayList to store the paths that we draw on the screen
 
@@ -52,14 +61,14 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs){
         // Created a new paint with default settings
 
         mDrawPath = CustomPath(color, mBrushSize)
-        mDrawPaint!!.color = color
+        mDrawPaint?.color = color
         // Set the color of paint that we will be drawing with
 
-        mDrawPaint!!.style = Paint.Style.STROKE
-        mDrawPaint!!.strokeJoin = Paint.Join.ROUND
+        mDrawPaint?.style = Paint.Style.STROKE
+        mDrawPaint?.strokeJoin = Paint.Join.ROUND
         // Outer edges of a join meet in a circular arc
 
-        mDrawPaint!!.strokeCap = Paint.Cap.ROUND
+        mDrawPaint?.strokeCap = Paint.Cap.ROUND
         // Cap is the setting for stroke projection. Round projects the stroke
         // in a semicircle with centre from the point at which the path ends
         // Basically, when we stop drawing, the the end of stroke will be rounded
@@ -100,27 +109,42 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs){
     }
 
     // This function is called when we want to draw something
-    override fun onDraw(canvas: Canvas?){
+    override fun onDraw(canvas: Canvas){
         super.onDraw(canvas)
 
-        canvas?.drawBitmap(mCanvasBitmap!!, 0f, 0f, mCanvasPaint)
+        /**
+         * Draw the specified bitmap, with its top/left corner at (x,y), using the specified paint,
+         * transformed by the current matrix.
+         *
+         *If the bitmap and canvas have different densities, this function will take care of
+         * automatically scaling the bitmap to draw at the same density as the canvas.
+         *
+         * @param bitmap The bitmap to be drawn
+         * @param left The position of the left side of the bitmap being drawn
+         * @param top The position of the top side of the bitmap being drawn
+         * @param paint The paint used to draw the bitmap (may be null)
+         */
+
+        mCanvasBitmap?.let {
+            canvas.drawBitmap(it, 0f,   0f, mCanvasPaint)
+        }
         // Draw bitmap on canvas from top left using mCanvasPaint - used safe call
 
         for (path in mPaths){
-            mDrawPaint!!.strokeWidth = mDrawPath!!.brushThickness
-            mDrawPaint!!.color = mDrawPath!!.color
-            canvas?.drawPath(path, mDrawPaint!!)
+            mDrawPaint?.strokeWidth = path.brushThickness
+            mDrawPaint?.color = path.color
+            canvas.drawPath(path, mDrawPaint!!)
             // To redraw all the paths that were drawn before and stored in mPaths
         }
 
         if (!mDrawPath!!.isEmpty){
-            mDrawPaint!!.strokeWidth = mDrawPath!!.brushThickness
+            mDrawPaint?.strokeWidth = mDrawPath!!.brushThickness
             // Sets the stroke width of paint to the brush thickness of the path
             // Basically says how thick the paint should be
-            mDrawPaint!!.color = mDrawPath!!.color
+            mDrawPaint?.color = mDrawPath!!.color
             // Sets the color of PAINT to color of path
 
-            canvas?.drawPath(mDrawPath!!, mDrawPaint!!)
+            canvas.drawPath(mDrawPath!!, mDrawPaint!!)
         }
     }
 
@@ -187,11 +211,15 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs){
         mDrawPaint!!.strokeWidth = mBrushSize
     }
 
+    fun setColor(newColor: String){
+        color = Color.parseColor(newColor)
+        mDrawPaint?.color = color
+        // Sets the color of Paint to the color passed to the setColor function
+    }
+
     // internal -> visible in the same module - in this case, visible only in DrawingView.kt
     // inner -> nested class can access members of outer class
-    internal inner class CustomPath (var color: Int, var brushThickness: Float): Path(){
-
-    }
+    internal inner class CustomPath (var color: Int, var brushThickness: Float): Path()
 }
 
 

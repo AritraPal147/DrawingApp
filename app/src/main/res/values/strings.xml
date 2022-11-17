@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Drawing App</string>
     <string name="brush_size">Brush Size</string>
+    <string name="please_wait">Please Wait...</string>
 </resources>

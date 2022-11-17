@@ -4,25 +4,39 @@ import android.Manifest
 import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.View
+import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.get
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
 
 class MainActivity : AppCompatActivity() {
     private var drawingView: DrawingView? = null
     // Created a variable of the class DrawingView
 
     private var mImageButtonCurrentPaint: ImageButton? = null
+    private var customProgressDialog: Dialog? = null
 
     private val openGalleryLauncher : ActivityResultLauncher<Intent> =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()){
@@ -42,8 +56,7 @@ class MainActivity : AppCompatActivity() {
 
     private val requestPermission: ActivityResultLauncher<Array<String>> =
         registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) { permissions ->
+            ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             permissions.entries.forEach {
                 val permissionName = it.key
                 val isGranted = it.value    // Boolean value
@@ -62,6 +75,12 @@ class MainActivity : AppCompatActivity() {
                     openGalleryLauncher.launch(pickIntent)
                 } else {
                     if (permissionName == Manifest.permission.READ_EXTERNAL_STORAGE) {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Oops, you just denied the permission",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else if (permissionName == Manifest.permission.WRITE_EXTERNAL_STORAGE) {
                         Toast.makeText(
                             this@MainActivity,
                             "Oops, you just denied the permission",
@@ -103,7 +122,23 @@ class MainActivity : AppCompatActivity() {
             drawingView?.onClickRedo()
         }
 
-//        Toast.makeText(this, "USE BLACK INK FOR ERASER", Toast.LENGTH_LONG).show()
+        val ibSave: ImageButton = findViewById(R.id.ib_save)
+        ibSave.setOnClickListener{
+            if(isReadStorageAllowed()){
+                showProgressDialog()
+                lifecycleScope.launch{
+                    // Gets the Frame layout
+                    val flDrawingView: FrameLayout = findViewById(R.id.fl_drawing_view_container)
+
+                    /* Since we have to pass a view for getting the Bitmap,
+                     and as the frame layout contains the background image and the
+                     drawing view, we can pass the flDrawingView to the function
+                     And since the saveBitmapFile() method takes a sandwiched bitmap as a parameter
+                     we can pass getBitmapFromView parameter into it */
+                    saveBitmapFile(getBitmapFromView(flDrawingView))
+                }
+            }
+        }
 
         val ibGallery: ImageButton = findViewById(R.id.ib_gallery)
         ibGallery.setOnClickListener {
@@ -171,6 +206,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun isReadStorageAllowed() : Boolean {
+        val result =
+            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+        return result == PackageManager.PERMISSION_GRANTED
+    }
+
     private fun requestStoragePermission() {
         if (ActivityCompat.shouldShowRequestPermissionRationale(
                 this, Manifest.permission.READ_EXTERNAL_STORAGE)) {
@@ -181,8 +222,8 @@ class MainActivity : AppCompatActivity() {
         } else {
             requestPermission.launch(
                 arrayOf(
-                    Manifest.permission.READ_EXTERNAL_STORAGE
-                    // TODO - Addd writing external storage permission
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
                 )
             )
         }
@@ -194,5 +235,97 @@ class MainActivity : AppCompatActivity() {
                 dialog, _ ->dialog.dismiss()
         }
         builder.create().show()
+    }
+
+    private fun getBitmapFromView(view: View) : Bitmap {
+        // The bitmap is the background image, the view which contains our canvas - where we can paint on
+        // So, the bitmap is basically an image sandwich made of these components
+        val returnedBitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(returnedBitmap)
+        val bgDrawable = view.background
+
+        if (bgDrawable != null){
+            bgDrawable.draw(canvas)
+        } else{
+            canvas.drawColor(Color.BLACK)
+        }
+
+        view.draw(canvas)
+        return returnedBitmap
+    }
+
+    private suspend fun saveBitmapFile(mBitmap: Bitmap?) : String {
+        var result = ""
+        withContext(Dispatchers.IO) {
+            if (mBitmap != null) {
+                try {
+                    // Created a Byte Array Output Stream to output our image
+                    // Buffer capacity is initially 32 bytes, but can be increased if necessary
+                    val bytes = ByteArrayOutputStream()
+
+                    // The bitmap is compressed into a png formal with 90% quality
+                    mBitmap.compress(Bitmap.CompressFormat.PNG, 90, bytes)
+
+                    // f is file in which the png format compressed bitmap is stored
+                    // here externalCacheDir?.absoluteFile.toString() is the file path
+                    val f = File(
+                        externalCacheDir?.absoluteFile.toString()
+                                + File.separator + "DrawingApp_"
+                                + System.currentTimeMillis() / 1000 + ".png"
+                    )
+                    /* System.currentTimeMillis() / 1000 gives the current time in milliseconds
+                    / divided by 1000 - used in order to give uniqueness to the file name*/
+
+                    val fo = FileOutputStream(f)
+                    fo.write(bytes.toByteArray())
+                    fo.close()
+
+                    result = f.absolutePath
+
+                    runOnUiThread {
+                        cancelProgressDialog()
+                        if (result.isNotEmpty()) {
+                            Toast.makeText(
+                                this@MainActivity,
+                                "File Saved Successfully: $result",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Something went wrong while saving the data.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+
+                } catch (e: Exception) {
+                    result = ""
+                    e.printStackTrace()
+                }
+            }
+        }
+        return result
+    }
+
+    // Progress dialog to run while the image is being saved
+    private fun showProgressDialog(){
+        customProgressDialog = Dialog(this@MainActivity)
+
+        /* Set the screen content from a layout resource.
+        The resource will be inflated, adding all top-level views to the screen*/
+        customProgressDialog?.setContentView(R.layout.dialog_custom_progess)
+
+        customProgressDialog?.setCancelable(false)
+        // Start the dialog and view it on the screen
+        customProgressDialog?.show()
+    }
+
+    // Cancelling the progress dialog
+    private fun cancelProgressDialog(){
+        if (customProgressDialog != null){
+            customProgressDialog?.dismiss()
+            customProgressDialog = null
+        }
     }
 }

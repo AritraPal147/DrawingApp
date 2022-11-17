@@ -42,18 +42,39 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs){
     /**
      * A variable for canvas which will be initialized later and used.
      *
-     *The Canvas class holds the "draw" calls. To draw something, you need 4 basic components: A Bitmap to hold the pixels, a Canvas to host
-     * the draw calls (writing into the bitmap), a drawing primitive (e.g. Rect,
-     * Path, text, Bitmap), and a paint (to describe the colors and styles for the
-     * drawing)
+     *The Canvas class holds the "draw" calls. To draw something, you need 4 basic components:
+     * A Bitmap to hold the pixels,
+     * a Canvas to host the draw calls (writing into the bitmap),
+     * a drawing primitive (e.g. Rect, Path, text, Bitmap),
+     * and a paint (to describe the colors and styles for the drawing
      */
 
     private val mPaths = ArrayList<CustomPath>()
     // ArrayList to store the paths that we draw on the screen
+    private val mUndoPaths = ArrayList<CustomPath>()
 
     // Code inside the init block is the first to be executed when a class is instantiated
     init {
         setUpDrawing()
+    }
+
+    fun onClickUndo(){
+        // Checks if anything is drawn on the screen or not
+        if (mPaths.size > 0) {
+            // Removing the last drawn path from the mPaths and adding it to the mUndoPaths
+            mUndoPaths.add(mPaths.removeAt(mPaths.size - 1))
+
+            invalidate()
+            // Internally calls the onDraw() method since onDraw() is an overwrite method
+            // that is done on views (Drawing view is of class type View)
+        }
+    }
+
+    fun onClickRedo(){
+        if (mUndoPaths.size > 0){
+            mPaths.add(mUndoPaths.removeAt(mUndoPaths.size - 1))
+            invalidate()
+        }
     }
 
     private fun setUpDrawing() {

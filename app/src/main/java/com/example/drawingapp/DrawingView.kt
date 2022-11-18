@@ -10,7 +10,6 @@ import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.View
-import androidx.constraintlayout.widget.ConstraintSet.Motion
 
 class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs){
     // Created a class DrawingView of which inherits from class View() to provide a
@@ -52,6 +51,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs){
     private val mPaths = ArrayList<CustomPath>()
     // ArrayList to store the paths that we draw on the screen
     private val mUndoPaths = ArrayList<CustomPath>()
+    // ArrayList to store the paths that we will undo (delete) from screen (and mPaths)
 
     // Code inside the init block is the first to be executed when a class is instantiated
     init {

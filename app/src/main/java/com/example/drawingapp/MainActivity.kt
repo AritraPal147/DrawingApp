@@ -224,7 +224,7 @@ class MainActivity : AppCompatActivity() {
         //Getting the permission status
         // Here the checkSelfPermission is
         /**
-         * Determine whether <em>you</em> have been granted a particular permission.
+         * Determine whether you have been granted a particular permission.
          *
          * @param permission The name of the permission being checked.
          *
@@ -256,8 +256,8 @@ class MainActivity : AppCompatActivity() {
             )
         } else {
             // You can directly ask for the permission.
-            //if it has not been denied then request for permission
-            //  The registered ActivityResultCallback gets the result of this request.
+            // if it has not been denied then request for permission
+            // The registered ActivityResultCallback gets the result of this request.
             requestPermission.launch(
                 arrayOf(
                     Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -348,13 +348,17 @@ class MainActivity : AppCompatActivity() {
                     // absoluteFile : Returns the absolute form of this abstract pathname.
                     // File.separator : The system-dependent default name-separator character. This string contains a single character.
 
-                    val fo =
-                        FileOutputStream(f) // Creates a file output stream to write to the file represented by the specified object.
-                    fo.write(bytes.toByteArray()) // Writes bytes from the specified byte array to this file output stream.
-                    fo.close() // Closes this file output stream and releases any system resources associated with this stream. This file output stream may no longer be used for writing bytes.
-                    result = f.absolutePath // The file absolute path is return as a result.
-                    //We switch from io to ui thread to show a toast
+                    val fo = FileOutputStream(f)
+                    // Creates a file output stream to write to the file represented by the specified object.
+                    fo.write(bytes.toByteArray())
+                    // Writes bytes from the specified byte array to this file output stream.
+                    fo.close()
+                    /* Closes this file output stream and releases any system resources associated
+                     with this stream. This file output stream may no longer be used for writing bytes. */
 
+                    result = f.absolutePath // The file absolute path is return as a result.
+
+                    //We switch from io to ui thread to show a toast
                     runOnUiThread {
                         cancelProgressDialog()
                         if (result.isNotEmpty()) {
@@ -404,44 +408,3 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
-    /*
-    private fun shareImage(result: String) {
-        /*MediaScannerConnection provides a way for applications to pass a
-      newly created or downloaded media file to the media scanner service.
-      The media scanner service will read metadata from the file and add
-      the file to the media content provider.
-      The MediaScannerConnectionClient provides an interface for the
-      media scanner service to return the Uri for a newly scanned file
-      to the client of the MediaScannerConnection class.*/
-
-        /*scanFile is used to scan the file when the connection is established with MediaScanner.*/
-        MediaScannerConnection.scanFile(
-            this@MainActivity, arrayOf(result), null
-        ) { path, uri ->
-            // This is used for sharing the image after it has being stored in the storage.
-            val shareIntent = Intent()
-            shareIntent.action = Intent.ACTION_SEND
-            shareIntent.putExtra(
-                Intent.EXTRA_STREAM,
-                uri
-            ) // A content: URI holding a stream of data associated with the Intent, used to supply the data being sent.
-            shareIntent.type =
-                "image/png" // The MIME type of the data being handled by this intent.
-            startActivity(
-                Intent.createChooser(
-                    shareIntent,
-                    "Share"
-                )
-            )// Activity Action: Display an activity chooser,
-            // allowing the user to pick what they want to before proceeding.
-            // This can be used as an alternative to the standard activity picker
-            // that is displayed by the system when you try to start an activity with multiple possible matches,
-            // with these differences in behavior:
-        }
-        // END
-    }
-    /**
-     * Method is used to show the Custom Progress Dialog.
-     */
-}
-*/
